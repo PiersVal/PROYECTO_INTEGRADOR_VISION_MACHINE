@@ -2,35 +2,49 @@ import os
 import cv2
 import numpy as np
 from ultralytics import YOLO
+from genera_dataset.dataset_animales import descargar_dataset
 
+# ----------------------------------------------------
+# Descargar dataset
+# ----------------------------------------------------
+descargar_dataset()
 
-# ====================================================
-# CONFIGURACIÓN
-# ====================================================
-MODEL_PATH = "src/models/yolov8n-seg.pt"
-OUTPUT_BASE = "dataset/animals_preprocesado"
+# ----------------------------------------------------
+# Configuración general
+# ----------------------------------------------------
+MODEL_NAME = "yolov8n-seg.pt"
 MAX_IMGS = 100
+BASE_DATASET = "dataset/animales"
+TARGET_SIZE = (256, 256)
 
-CLASES = {
-    "gatto": "cat",
-    "cavallo": "horse",
-    "elefante": "elephant"
+DATASETS = {
+    "gatto": {
+        "class_name": "cat",
+        "prefix": "gato"
+    },
+    "cavallo": {
+        "class_name": "horse",
+        "prefix": "caballo"
+    },
+    "elefante": {
+        "class_name": "elephant",
+        "prefix": "elefante"
+    }
 }
 
-EXT_VALIDAS = (".jpg", ".jpeg", ".png", ".bmp")
+# ----------------------------------------------------
+# Modelo YOLO
+# ----------------------------------------------------
+model = YOLO(MODEL_NAME)
 
-# ====================================================
-# CARGAR MODELO
-# ====================================================
-model = YOLO(MODEL_PATH)
+# ----------------------------------------------------
+# PREPROCESAMIENTO CLÁSICO
+# ----------------------------------------------------
+def rescalar(img):
+    return cv2.resize(img, TARGET_SIZE)
 
-
-# ====================================================
-# PIPELINE CLÁSICO
-# ====================================================
 def escala_grises(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
 
 def stretching(img):
     img = img / 255.0
@@ -39,101 +53,110 @@ def stretching(img):
         return (img * 255).astype(np.uint8)
     return np.clip((img - a) / (b - a) * 255, 0, 255).astype(np.uint8)
 
-
-def miAmpliH(img):
-    return np.clip(img * 1.5, 0, 255).astype(np.uint8)
-
-
-def miCuadrada(img):
-    return np.clip((img / 255.0) ** 2 * 255, 0, 255).astype(np.uint8)
-
-
-def miRaiz(img):
-    return np.clip(np.sqrt(img / 255.0) * 255, 0, 255).astype(np.uint8)
-
-
-def miEcualizador(img):
+def ecualizar(img):
     return cv2.equalizeHist(img)
 
-
-def otsu_manual(img):
-    hist = cv2.calcHist([img], [0], None, [256], [0, 256]).ravel()
-    hist /= hist.sum()
-    omega = np.cumsum(hist)
-    mu = np.cumsum(hist * np.arange(256))
-    mu_t = mu[-1]
-    sigma_b = (mu_t * omega - mu) ** 2 / (omega * (1 - omega) + 1e-10)
-    t = np.argmax(sigma_b)
-    _, binaria = cv2.threshold(img, t, 255, cv2.THRESH_BINARY)
+def otsu(img):
+    _, binaria = cv2.threshold(
+        img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+    )
     return binaria
 
+# ----------------------------------------------------
+# SEGMENTACIÓN YOLO
+# ----------------------------------------------------
+def segmentar_yolo(img, class_name, umbral=0.7):
+    h, w = img.shape[:2]
 
-def pipeline_clasico(img):
-    g = escala_grises(img)
-    s = stretching(g)
-    a = miAmpliH(s)
-    c = miCuadrada(a)
-    r = miRaiz(c)
-    e = miEcualizador(r)
-    o = otsu_manual(e)
-    return o
+    res = model(img)[0]
+    if res.masks is None:
+        return None
 
+    masks = res.masks.data.cpu().numpy()
+    cls = res.boxes.cls.cpu().numpy().astype(int)
+    names = res.names
 
-# ====================================================
-# PROCESAMIENTO POR CLASE
-# ====================================================
-def procesar_clase(ruta_entrada, ruta_salida, class_name, prefijo):
-    os.makedirs(ruta_salida, exist_ok=True)
-    archivos = sorted(os.listdir(ruta_entrada))
-    count = 0
+    class_id = [k for k, v in names.items() if v == class_name][0]
+    idxs = np.where(cls == class_id)[0]
 
-    print(f"\nProcesando {prefijo.upper()}")
+    if len(idxs) == 0:
+        return None
 
-    for fname in archivos:
-        if count >= MAX_IMGS:
-            break
-        if not fname.lower().endswith(EXT_VALIDAS):
-            continue
+    best = idxs[np.argmax([masks[i].sum() for i in idxs])]
+    mask = (masks[best] >= umbral).astype(np.uint8)
+    mask = cv2.resize(mask, (w, h), interpolation=cv2.INTER_NEAREST)
 
-        img_path = os.path.join(ruta_entrada, fname)
-        img = cv2.imread(img_path)
-        if img is None:
-            continue
+    return mask
 
-        h, w = img.shape[:2]
+# ----------------------------------------------------
+# PROCESAMIENTO DE DATASETS
+# ----------------------------------------------------
+def procesar_datasets():
 
-        # -------- YOLO SEGMENTACIÓN --------
-        res = model(img_path)[0]
-        if res.masks is None:
-            continue
+    for carpeta, cfg in DATASETS.items():
 
-        masks = res.masks.data.cpu().numpy()
-        cls = res.boxes.cls.cpu().numpy().astype(int)
-        names = res.names
+        input_dir = os.path.join(BASE_DATASET, carpeta)
+        class_name = cfg["class_name"]
+        prefix = cfg["prefix"]
 
-        class_id = [k for k, v in names.items() if v == class_name][0]
-        idxs = np.where(cls == class_id)[0]
-        if len(idxs) == 0:
-            continue
+        base_out = os.path.join(BASE_DATASET, f"{carpeta}_Procesada")
 
-        best = idxs[np.argmax([masks[i].sum() for i in idxs])]
-        mask01 = (masks[best] >= 0.7).astype(np.uint8)
-        mask01 = cv2.resize(mask01, (w, h), cv2.INTER_NEAREST)
+        out_gris = os.path.join(base_out, "grises")
+        out_ecu = os.path.join(base_out, "ecualizada")
+        out_bin = os.path.join(base_out, "binaria")
 
-        kernel = np.ones((5, 5), np.uint8)
-        mask01 = cv2.morphologyEx(mask01, cv2.MORPH_CLOSE, kernel)
-        mask01 = cv2.morphologyEx(mask01, cv2.MORPH_OPEN, kernel)
+        for d in [out_gris, out_ecu, out_bin]:
+            os.makedirs(d, exist_ok=True)
 
-        img_fg = cv2.bitwise_and(img, img, mask=mask01)
+        files = sorted(os.listdir(input_dir))
+        count = 0
 
-        # -------- PIPELINE FINAL --------
-        img_final = pipeline_clasico(img_fg)
+        print(f"\nProcesando {carpeta.upper()}")
 
-        out_name = f"{prefijo}_{count:03d}.png"
-        cv2.imwrite(os.path.join(ruta_salida, out_name), img_final)
-        print(out_name)
+        for fname in files:
 
-        count += 1
+            if count >= MAX_IMGS:
+                break
 
-    print(f"{count} imágenes procesadas")
+            if not fname.lower().endswith((".jpg", ".png", ".jpeg")):
+                continue
 
+            img_path = os.path.join(input_dir, fname)
+            img = cv2.imread(img_path)
+            if img is None:
+                continue
+
+            # ---------- GRIS (siempre se guarda) ----------
+            img_r = rescalar(img)
+            gris = escala_grises(img_r)
+            cv2.imwrite(
+                os.path.join(out_gris, f"{prefix}_{count:03d}.png"),
+                gris
+            )
+
+            # ---------- ECUALIZADA (siempre se guarda) ----------
+            s = stretching(gris)
+            ecu = ecualizar(s)
+            cv2.imwrite(
+                os.path.join(out_ecu, f"{prefix}_{count:03d}.png"),
+                ecu
+            )
+
+            # ---------- BINARIA (solo si YOLO detecta) ----------
+            ecu_bgr = cv2.cvtColor(ecu, cv2.COLOR_GRAY2BGR)
+            mask = segmentar_yolo(ecu_bgr, class_name)
+
+            if mask is not None:
+                objeto = cv2.bitwise_and(ecu, ecu, mask=mask)
+                binaria = otsu(objeto)
+                cv2.imwrite(
+                    os.path.join(out_bin, f"{prefix}_{count:03d}.png"),
+                    binaria
+                )
+
+            count += 1
+            print(f"✅ [{count}/{MAX_IMGS}] {prefix}_{count:03d}.png")
+
+        print(f"{carpeta.upper()} terminado ({count} imágenes)")
+
+    print("\nTodos los datasets procesados")
