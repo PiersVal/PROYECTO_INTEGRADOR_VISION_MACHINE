@@ -126,37 +126,37 @@ def procesar_datasets():
             if img is None:
                 continue
 
-            #Escala de grises desde original
+            # ---------- GRIS (siempre se guarda) ----------
             img_r = rescalar(img)
             gris = escala_grises(img_r)
             cv2.imwrite(
-                os.path.join(out_gris, f"{prefix}_{count:03d}.png"), gris
+                os.path.join(out_gris, f"{prefix}_{count:03d}.png"),
+                gris
             )
 
-            #Ecualización DESDE GRIS
+            # ---------- ECUALIZADA (siempre se guarda) ----------
             s = stretching(gris)
             ecu = ecualizar(s)
             cv2.imwrite(
-                os.path.join(out_ecu, f"{prefix}_{count:03d}.png"), ecu
+                os.path.join(out_ecu, f"{prefix}_{count:03d}.png"),
+                ecu
             )
 
-            #Segmentación desde ecualizada 
+            # ---------- BINARIA (solo si YOLO detecta) ----------
             ecu_bgr = cv2.cvtColor(ecu, cv2.COLOR_GRAY2BGR)
             mask = segmentar_yolo(ecu_bgr, class_name)
 
-            if mask is None:
-                continue
-
-            objeto = cv2.bitwise_and(ecu, ecu, mask=mask)
-            binaria = otsu(objeto)
-
-            cv2.imwrite(
-                os.path.join(out_bin, f"{prefix}_{count:03d}.png"), binaria
-            )
+            if mask is not None:
+                objeto = cv2.bitwise_and(ecu, ecu, mask=mask)
+                binaria = otsu(objeto)
+                cv2.imwrite(
+                    os.path.join(out_bin, f"{prefix}_{count:03d}.png"),
+                    binaria
+                )
 
             count += 1
-            print(f"✅ [{count}/{MAX_IMGS}] {prefix}_{count:03d}.png")
+            print(f"[{count}/{MAX_IMGS}] {prefix}_{count:03d}.png")
 
-        print(f"✔ {carpeta.upper()} terminado ({count} imágenes)")
+        print(f"{carpeta.upper()} terminado ({count} imágenes)")
 
-    print("\nTodos los datasets procesados")
+    print("\nTodos los datasets procesados") 
