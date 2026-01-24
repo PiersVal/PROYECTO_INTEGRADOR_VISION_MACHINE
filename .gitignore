@@ -1,8 +1,17 @@
+# Ignore Python virtual environments
+.venv/
+venv/
+ENV/
+
+# Python caches
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
-.env
-.vscode/
-.idea/
-.DS_Store
+
+# Misc
+*.DS_Store
+
+# Project-specific large files
+# Ignore heavy HOG feature CSVs that exceed GitHub's 100MB limit
+data/features/*/dataset_hog.csv
