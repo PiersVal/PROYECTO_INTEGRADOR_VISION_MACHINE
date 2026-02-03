@@ -32,3 +32,4 @@ El proyecto consiste en:
 - Selecciona e implementa algoritmos de búsqueda y clustering.
 - Aplica Máquinas de Soporte Vectorial (SVM) para clasificación y regresión.
 - Desarrolla algoritmos basados en árboles de decisión.
+###
