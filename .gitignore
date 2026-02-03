@@ -2,7 +2,7 @@
 .venv/
 venv/
 ENV/
-
+backend/data/
 # Python caches
 __pycache__/
 *.py[cod]

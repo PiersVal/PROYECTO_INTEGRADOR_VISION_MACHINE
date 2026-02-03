@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Procesamiento de Imágenes</title>
+    
+    <!-- CSS Modular -->
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/sidebar.css" />
+    <link rel="stylesheet" href="css/gallery.css" />
+    <link rel="stylesheet" href="css/forms.css" />
+    <link rel="stylesheet" href="css/metrics.css" />
+  </head>
+  <body>
+    <!-- Menú lateral izquierdo -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>🔬 Control de Análisis</h2>
+      </div>
+      <div class="sidebar-content">
+        <div class="menu-section">
+          <label for="main-mode-select">Clustering en Galería</label>
+          <select id="main-mode-select" class="menu-select">
+            <option value="gallery" selected>📸 Galería de Imágenes</option>
+            <option value="unsupervised">Clustering sin etiquetas</option>
+            <option value="supervised">Clustering con etiquetas</option>
+          </select>
+        </div>
+        
+        <div class="menu-section" id="method-section" style="display: none;">
+          <label for="method-select">Método de análisis</label>
+          <select id="method-select" class="menu-select">
+            <option value="">-- Seleccionar método --</option>
+          </select>
+        </div>
+        
+        <div class="menu-info">
+          <p>💡 Selecciona el tipo de clustering y luego el método específico</p>
+        </div>
+      </div>
+    </aside>
+
+    <div class="container">
+      <header>
+        <h1>Procesamiento de Imágenes</h1>
+        <p>Sube una o varias imágenes y compara original vs procesada.</p>
+      </header>
+
+      <section class="upload-card">
+        <div id="drop-zone" class="drop-zone">
+          <p>Arrastra y suelta imágenes aquí o selecciona archivos</p>
+          <input id="file-input" type="file" accept="image/png,image/jpeg" multiple />
+        </div>
+        
+        <!-- Radio buttons ocultos para compatibilidad -->
+        <div class="mode-selector" style="display: none;">
+          <label><input type="radio" name="mode" value="gallery" checked /> Ver galería</label>
+          <label><input type="radio" name="mode" value="momentos" /> Momentos (24)</label>
+          <label><input type="radio" name="mode" value="hu" /> Hu</label>
+          <label><input type="radio" name="mode" value="zernike" /> Zernike</label>
+          <label><input type="radio" name="mode" value="sift" /> SIFT</label>
+          <label><input type="radio" name="mode" value="hog" /> HOG</label>
+          <label><input type="radio" name="mode" value="cnn" /> CNN</label>
+          <label><input type="radio" name="mode" value="external-metrics" />  Momentos </label>
+          <label><input type="radio" name="mode" value="external-metrics-hu" />  Hu </label>
+          <label><input type="radio" name="mode" value="external-metrics-zernike" />  Zernike </label>
+          <label><input type="radio" name="mode" value="external-metrics-sift" />  SIFT </label>
+          <label><input type="radio" name="mode" value="external-metrics-hog" />  HOG </label>
+          <label><input type="radio" name="mode" value="external-metrics-cnn" />  CNN </label>
+        </div>
+
+        <!-- Configuración Momentos -->
+        <div class="mode-config" id="momentos-config">
+          <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+            <strong>⚠️ Importante:</strong>
+            <ul style="margin: 5px 0; padding-left: 20px; font-size: 13px;">
+              <li>Primero ingresa capacities (ej: 5,5)</li>
+              <li>Haz clic en <strong>"Subir"</strong> para cargar las primeras imágenes</li>
+              <li>Luego usa <strong>"Actualizar restricciones"</strong> para cambiar capacities</li>
+              <li>Finalmente usa <strong>"Agregar imágenes"</strong> para agregar más</li>
+            </ul>
+          </div>
+          <label for="clusters-input">Número de clusters</label>
+          <input id="clusters-input" type="number" min="1" placeholder="3" />
+          <label for="capacities-input">Capacidades (ej: 10,20,5)</label>
+          <input id="capacities-input" type="text" placeholder="10,20,5" />
+          <div class="momentos-actions">
+            <button id="add-images-btn" class="secondary">➕ Agregar imágenes al clustering</button>
+            <button id="update-capacities-btn" class="secondary">⚙️ Actualizar restricciones</button>
+            <button id="status-btn" class="secondary">📊 Ver estado de clusters</button>
+          </div>
+          <div id="cluster-status-display" style="display:none; margin-top: 12px; padding: 10px; background: #e8f4f8; border: 1px solid #0288d1; border-radius: 6px; font-size: 12px;">
+            <strong>📊 Estado del Clustering:</strong>
+            <div id="cluster-status-content"></div>
+          </div>
+        </div>
+
+        <!-- Configuración Hu -->
+        <div class="mode-config" id="hu-config">
+          <label for="hu-clusters-input">Número de clusters</label>
+          <input id="hu-clusters-input" type="number" min="1" placeholder="3" />
+          <label for="hu-capacities-input">Capacidades (ej: 10,20,5)</label>
+          <input id="hu-capacities-input" type="text" placeholder="10,20,5" />
+          <div class="momentos-actions">
+            <button id="add-images-btn-hu" class="secondary">➕ Agregar imágenes al clustering</button>
+            <button id="update-capacities-btn-hu" class="secondary">🔄 Actualizar restricciones</button>
+            <button id="status-btn-hu" class="secondary">📊 Ver estado de clusters</button>
+          </div>
+          <div id="cluster-status-display-hu" style="display:none; margin-top: 12px; padding: 10px; background: #e8f4f8; border: 1px solid #0288d1; border-radius: 6px; font-size: 12px;">
+            <strong>📊 Estado del Clustering:</strong>
+            <div id="cluster-status-content-hu"></div>
+          </div>
+        </div>
+
+        <!-- Configuración Zernike -->
+        <div class="mode-config" id="zernike-config">
+          <label for="zernike-clusters-input">Número de clusters</label>
+          <input id="zernike-clusters-input" type="number" min="1" placeholder="3" />
+          <label for="zernike-capacities-input">Capacidades (ej: 10,20,5)</label>
+          <input id="zernike-capacities-input" type="text" placeholder="10,20,5" />
+          <div class="momentos-actions">
+            <button id="add-images-btn-zernike" class="secondary">➕ Agregar imágenes al clustering</button>
+            <button id="update-capacities-btn-zernike" class="secondary">⚙️ Actualizar restricciones</button>
+            <button id="status-btn-zernike" class="secondary">📊 Ver estado de clusters</button>
+          </div>
+          <div id="cluster-status-display-zernike" style="display:none; margin-top: 12px; padding: 10px; background: #e8f4f8; border: 1px solid #0288d1; border-radius: 6px; font-size: 12px;">
+            <strong>📊 Estado del Clustering:</strong>
+            <div id="cluster-status-content-zernike"></div>
+          </div>
+        </div>
+
+        <!-- Configuración SIFT -->
+        <div class="mode-config" id="sift-config">
+          <label for="sift-clusters-input">Número de clusters</label>
+          <input id="sift-clusters-input" type="number" min="1" placeholder="3" />
+          <label for="sift-capacities-input">Capacidades (ej: 10,20,5)</label>
+          <input id="sift-capacities-input" type="text" placeholder="10,20,5" />
+          <div class="momentos-actions">
+            <button id="add-images-btn-sift" class="secondary">➕ Agregar imágenes al clustering</button>
+            <button id="update-capacities-btn-sift" class="secondary">⚙️ Actualizar restricciones</button>
+            <button id="status-btn-sift" class="secondary">📊 Ver estado de clusters</button>
+          </div>
+          <div id="cluster-status-display-sift" style="display:none; margin-top: 12px; padding: 10px; background: #e8f4f8; border: 1px solid #0288d1; border-radius: 6px; font-size: 12px;">
+            <strong>📊 Estado del Clustering:</strong>
+            <div id="cluster-status-content-sift"></div>
+          </div>
+        </div>
+
+        <!-- Configuración HOG -->
+        <div class="mode-config" id="hog-config">
+          <label for="hog-clusters-input">Número de clusters</label>
+          <input id="hog-clusters-input" type="number" min="1" placeholder="3" />
+          <label for="hog-capacities-input">Capacidades (ej: 10,20,5)</label>
+          <input id="hog-capacities-input" type="text" placeholder="10,20,5" />
+          <div class="momentos-actions">
+            <button id="add-images-btn-hog" class="secondary">➕ Agregar imágenes al clustering</button>
+            <button id="update-capacities-btn-hog" class="secondary">⚙️ Actualizar restricciones</button>
+            <button id="status-btn-hog" class="secondary">📊 Ver estado de clusters</button>
+          </div>
+          <div id="cluster-status-display-hog" style="display:none; margin-top: 12px; padding: 10px; background: #e8f4f8; border: 1px solid #0288d1; border-radius: 6px; font-size: 12px;">
+            <strong>📊 Estado del Clustering:</strong>
+            <div id="cluster-status-content-hog"></div>
+          </div>
+        </div>
+
+        <!-- Configuración CNN -->
+        <div class="mode-config" id="cnn-config">
+          <label for="cnn-clusters-input">Número de clusters</label>
+          <input id="cnn-clusters-input" type="number" min="1" placeholder="3" />
+          <label for="cnn-capacities-input">Capacidades (ej: 10,20,5)</label>
+          <input id="cnn-capacities-input" type="text" placeholder="10,20,5" />
+          <div class="momentos-actions">
+            <button id="add-images-btn-cnn" class="secondary">➕ Agregar imágenes al clustering</button>
+            <button id="update-capacities-btn-cnn" class="secondary">⚙️ Actualizar restricciones</button>
+            <button id="status-btn-cnn" class="secondary">📊 Ver estado de clusters</button>
+          </div>
+          <div id="cluster-status-display-cnn" style="display:none; margin-top: 12px; padding: 10px; background: #e8f4f8; border: 1px solid #0288d1; border-radius: 6px; font-size: 12px;">
+            <strong>📊 Estado del Clustering:</strong>
+            <div id="cluster-status-content-cnn"></div>
+          </div>
+        </div>
+
+        <!-- Configuración Momentos con Etiquetas -->
+        <div class="mode-config" id="external-metrics-config">
+          <div style="background: #e8f5e9; border: 1px solid #4caf50; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+            <strong>📊 Momentos con Etiquetas (ARI/AMI/NMI)</strong>
+            <ul style="margin: 5px 0; padding-left: 20px; font-size: 13px;">
+              <li>1️⃣ Indica cuántos grupos/etiquetas tienes</li>
+              <li>2️⃣ Carga imágenes para cada grupo (asigna etiqueta)</li>
+              <li>3️⃣ Calcula métricas externas: ARI, AMI, NMI</li>
+              <li>✨ También verás Dunn Index y Silhouette</li>
+            </ul>
+          </div>
+          <label for="external-num-groups">¿Cuántos grupos de imágenes tienes?</label>
+          <input id="external-num-groups" type="number" min="2" max="10" placeholder="3" />
+          <label for="external-capacities" style="margin-top: 8px;">Restricciones / capacidades (ej: 10,10,10)</label>
+          <input id="external-capacities" type="text" placeholder="10,10,10" />
+          <button id="init-external-btn" class="secondary">🚀 Inicializar sesión</button>
+          
+          <div id="external-groups-container" style="display:none; margin-top: 15px;">
+            <h4>📁 Carga imágenes por grupo:</h4>
+            <div id="external-groups-inputs"></div>
+            <button id="calculate-metrics-btn" class="secondary" style="margin-top: 15px; background: #2196F3;">
+              🧮 Calcular ARI/AMI/NMI
+            </button>
+            <button id="reset-external-btn" class="secondary" style="margin-top: 10px; background: #e53935;">
+              🧹 Borrar resultados y reiniciar
+            </button>
+          </div>
+
+          <div id="external-metrics-results" style="display:none; margin-top: 20px; padding: 15px; background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 6px;">
+            <h4>📊 Resultados de Métricas Externas:</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 10px 0;">
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>ARI</strong><br>
+                <span id="result-ari" style="font-size: 20px; color: #d32f2f;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>AMI</strong><br>
+                <span id="result-ami" style="font-size: 20px; color: #1976d2;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>NMI</strong><br>
+                <span id="result-nmi" style="font-size: 20px; color: #388e3c;">-</span>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>Dunn Index</strong><br>
+                <span id="result-dunn" style="font-size: 18px; color: #f57c00;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>Silhouette</strong><br>
+                <span id="result-silhouette" style="font-size: 18px; color: #0097a7;">-</span>
+              </div>
+            </div>
+            <div id="metrics-summary" style="margin-top: 10px; font-size: 12px; color: #555;"></div>
+            
+            <hr style="margin: 20px 0; border: none; border-top: 2px solid #9c27b0;">
+            
+            <h4 style="margin-top: 20px;">🎯 Clusters Predichos (con Imágenes):</h4>
+            <div id="clusters-visualization" style="margin-top: 15px;"></div>
+          </div>
+        </div>
+
+        <!-- Configuración Hu con Etiquetas -->
+        <div class="mode-config" id="external-hu-config">
+          <div style="background: #e8f5e9; border: 1px solid #4caf50; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+            <strong>📊 Hu Moments con Etiquetas (ARI/AMI/NMI)</strong>
+          </div>
+          <label for="external-hu-num-groups">¿Cuántos grupos de imágenes tienes?</label>
+          <input id="external-hu-num-groups" type="number" min="2" max="10" placeholder="3" />
+          <label for="external-hu-capacities" style="margin-top: 8px;">Restricciones / capacidades (ej: 10,10,10)</label>
+          <input id="external-hu-capacities" type="text" placeholder="10,10,10" />
+          <button id="init-external-hu-btn" class="secondary">🚀 Inicializar sesión</button>
+          
+          <div id="external-hu-groups-container" style="display:none; margin-top: 15px;">
+            <h4>📁 Carga imágenes por grupo:</h4>
+            <div id="external-hu-groups-inputs"></div>
+            <button id="calculate-metrics-hu-btn" class="secondary" style="margin-top: 15px; background: #2196F3;">
+              🧮 Calcular ARI/AMI/NMI
+            </button>
+            <button id="reset-external-hu-btn" class="secondary" style="margin-top: 10px; background: #e53935;">
+              🧹 Borrar resultados y reiniciar
+            </button>
+          </div>
+
+          <div id="external-metrics-hu-results" style="display:none; margin-top: 20px; padding: 15px; background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 6px;">
+            <h4>📊 Resultados de Métricas Externas:</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 10px 0;">
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>ARI</strong><br><span id="result-hu-ari" style="font-size: 20px; color: #d32f2f;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>AMI</strong><br><span id="result-hu-ami" style="font-size: 20px; color: #1976d2;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>NMI</strong><br><span id="result-hu-nmi" style="font-size: 20px; color: #388e3c;">-</span>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>Dunn Index</strong><br><span id="result-hu-dunn" style="font-size: 18px; color: #f57c00;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>Silhouette</strong><br><span id="result-hu-silhouette" style="font-size: 18px; color: #0097a7;">-</span>
+              </div>
+            </div>
+            <div id="metrics-hu-summary" style="margin-top: 10px; font-size: 12px; color: #555;"></div>
+            <hr style="margin: 20px 0; border: none; border-top: 2px solid #9c27b0;">
+            <h4 style="margin-top: 20px;">🎯 Clusters Predichos (con Imágenes):</h4>
+            <div id="clusters-hu-visualization" style="margin-top: 15px;"></div>
+          </div>
+        </div>
+
+        <!-- Configuración Zernike con Etiquetas -->
+        <div class="mode-config" id="external-zernike-config">
+          <div style="background: #e8f5e9; border: 1px solid #4caf50; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+            <strong>📊 Zernike con Etiquetas (ARI/AMI/NMI)</strong>
+          </div>
+          <label for="external-zernike-num-groups">¿Cuántos grupos de imágenes tienes?</label>
+          <input id="external-zernike-num-groups" type="number" min="2" max="10" placeholder="3" />
+          <label for="external-zernike-capacities" style="margin-top: 8px;">Restricciones / capacidades (ej: 10,10,10)</label>
+          <input id="external-zernike-capacities" type="text" placeholder="10,10,10" />
+          <button id="init-external-zernike-btn" class="secondary">🚀 Inicializar sesión</button>
+          
+          <div id="external-zernike-groups-container" style="display:none; margin-top: 15px;">
+            <h4>📁 Carga imágenes por grupo:</h4>
+            <div id="external-zernike-groups-inputs"></div>
+            <button id="calculate-metrics-zernike-btn" class="secondary" style="margin-top: 15px; background: #2196F3;">
+              🧮 Calcular ARI/AMI/NMI
+            </button>
+            <button id="reset-external-zernike-btn" class="secondary" style="margin-top: 10px; background: #e53935;">
+              🧹 Borrar resultados y reiniciar
+            </button>
+          </div>
+
+          <div id="external-metrics-zernike-results" style="display:none; margin-top: 20px; padding: 15px; background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 6px;">
+            <h4>📊 Resultados de Métricas Externas:</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 10px 0;">
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>ARI</strong><br><span id="result-zernike-ari" style="font-size: 20px; color: #d32f2f;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>AMI</strong><br><span id="result-zernike-ami" style="font-size: 20px; color: #1976d2;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>NMI</strong><br><span id="result-zernike-nmi" style="font-size: 20px; color: #388e3c;">-</span>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>Dunn Index</strong><br><span id="result-zernike-dunn" style="font-size: 18px; color: #f57c00;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>Silhouette</strong><br><span id="result-zernike-silhouette" style="font-size: 18px; color: #0097a7;">-</span>
+              </div>
+            </div>
+            <div id="metrics-zernike-summary" style="margin-top: 10px; font-size: 12px; color: #555;"></div>
+            <hr style="margin: 20px 0; border: none; border-top: 2px solid #9c27b0;">
+            <h4 style="margin-top: 20px;">🎯 Clusters Predichos (con Imágenes):</h4>
+            <div id="clusters-zernike-visualization" style="margin-top: 15px;"></div>
+          </div>
+        </div>
+
+        <!-- Configuración SIFT con Etiquetas -->
+        <div class="mode-config" id="external-sift-config">
+          <div style="background: #e8f5e9; border: 1px solid #4caf50; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+            <strong>📊 SIFT con Etiquetas (ARI/AMI/NMI)</strong>
+          </div>
+          <label for="external-sift-num-groups">¿Cuántos grupos de imágenes tienes?</label>
+          <input id="external-sift-num-groups" type="number" min="2" max="10" placeholder="3" />
+          <label for="external-sift-capacities" style="margin-top: 8px;">Restricciones / capacidades (ej: 10,10,10)</label>
+          <input id="external-sift-capacities" type="text" placeholder="10,10,10" />
+          <button id="init-external-sift-btn" class="secondary">🚀 Inicializar sesión</button>
+          
+          <div id="external-sift-groups-container" style="display:none; margin-top: 15px;">
+            <h4>📁 Carga imágenes por grupo:</h4>
+            <div id="external-sift-groups-inputs"></div>
+            <button id="calculate-metrics-sift-btn" class="secondary" style="margin-top: 15px; background: #2196F3;">
+              🧮 Calcular ARI/AMI/NMI
+            </button>
+            <button id="reset-external-sift-btn" class="secondary" style="margin-top: 10px; background: #e53935;">
+              🧹 Borrar resultados y reiniciar
+            </button>
+          </div>
+
+          <div id="external-metrics-sift-results" style="display:none; margin-top: 20px; padding: 15px; background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 6px;">
+            <h4>📊 Resultados de Métricas Externas:</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 10px 0;">
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>ARI</strong><br><span id="result-sift-ari" style="font-size: 20px; color: #d32f2f;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>AMI</strong><br><span id="result-sift-ami" style="font-size: 20px; color: #1976d2;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>NMI</strong><br><span id="result-sift-nmi" style="font-size: 20px; color: #388e3c;">-</span>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>Dunn Index</strong><br><span id="result-sift-dunn" style="font-size: 18px; color: #f57c00;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>Silhouette</strong><br><span id="result-sift-silhouette" style="font-size: 18px; color: #0097a7;">-</span>
+              </div>
+            </div>
+            <div id="metrics-sift-summary" style="margin-top: 10px; font-size: 12px; color: #555;"></div>
+            <hr style="margin: 20px 0; border: none; border-top: 2px solid #9c27b0;">
+            <h4 style="margin-top: 20px;">🎯 Clusters Predichos (con Imágenes):</h4>
+            <div id="clusters-sift-visualization" style="margin-top: 15px;"></div>
+          </div>
+        </div>
+
+        <!-- Configuración HOG con Etiquetas -->
+        <div class="mode-config" id="external-hog-config">
+          <div style="background: #e8f5e9; border: 1px solid #4caf50; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+            <strong>📊 HOG con Etiquetas (ARI/AMI/NMI)</strong>
+          </div>
+          <label for="external-hog-num-groups">¿Cuántos grupos de imágenes tienes?</label>
+          <input id="external-hog-num-groups" type="number" min="2" max="10" placeholder="3" />
+          <label for="external-hog-capacities" style="margin-top: 8px;">Restricciones / capacidades (ej: 10,10,10)</label>
+          <input id="external-hog-capacities" type="text" placeholder="10,10,10" />
+          <button id="init-external-hog-btn" class="secondary">🚀 Inicializar sesión</button>
+          
+          <div id="external-hog-groups-container" style="display:none; margin-top: 15px;">
+            <h4>📁 Carga imágenes por grupo:</h4>
+            <div id="external-hog-groups-inputs"></div>
+            <button id="calculate-metrics-hog-btn" class="secondary" style="margin-top: 15px; background: #2196F3;">
+              🧮 Calcular ARI/AMI/NMI
+            </button>
+            <button id="reset-external-hog-btn" class="secondary" style="margin-top: 10px; background: #e53935;">
+              🧹 Borrar resultados y reiniciar
+            </button>
+          </div>
+
+          <div id="external-metrics-hog-results" style="display:none; margin-top: 20px; padding: 15px; background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 6px;">
+            <h4>📊 Resultados de Métricas Externas:</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 10px 0;">
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>ARI</strong><br><span id="result-hog-ari" style="font-size: 20px; color: #d32f2f;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>AMI</strong><br><span id="result-hog-ami" style="font-size: 20px; color: #1976d2;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>NMI</strong><br><span id="result-hog-nmi" style="font-size: 20px; color: #388e3c;">-</span>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>Dunn Index</strong><br><span id="result-hog-dunn" style="font-size: 18px; color: #f57c00;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>Silhouette</strong><br><span id="result-hog-silhouette" style="font-size: 18px; color: #0097a7;">-</span>
+              </div>
+            </div>
+            <div id="metrics-hog-summary" style="margin-top: 10px; font-size: 12px; color: #555;"></div>
+            <hr style="margin: 20px 0; border: none; border-top: 2px solid #9c27b0;">
+            <h4 style="margin-top: 20px;">🎯 Clusters Predichos (con Imágenes):</h4>
+            <div id="clusters-hog-visualization" style="margin-top: 15px;"></div>
+          </div>
+        </div>
+
+        <!-- Configuración CNN con Etiquetas -->
+        <div class="mode-config" id="external-cnn-config">
+          <div style="background: #e8f5e9; border: 1px solid #4caf50; border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+            <strong>📊 CNN con Etiquetas (ARI/AMI/NMI)</strong>
+          </div>
+          <label for="external-cnn-num-groups">¿Cuántos grupos de imágenes tienes?</label>
+          <input id="external-cnn-num-groups" type="number" min="2" max="10" placeholder="3" />
+          <label for="external-cnn-capacities" style="margin-top: 8px;">Restricciones / capacidades (ej: 10,10,10)</label>
+          <input id="external-cnn-capacities" type="text" placeholder="10,10,10" />
+          <button id="init-external-cnn-btn" class="secondary">🚀 Inicializar sesión</button>
+          
+          <div id="external-cnn-groups-container" style="display:none; margin-top: 15px;">
+            <h4>📁 Carga imágenes por grupo:</h4>
+            <div id="external-cnn-groups-inputs"></div>
+            <button id="calculate-metrics-cnn-btn" class="secondary" style="margin-top: 15px; background: #2196F3;">
+              🧮 Calcular ARI/AMI/NMI
+            </button>
+            <button id="reset-external-cnn-btn" class="secondary" style="margin-top: 10px; background: #e53935;">
+              🧹 Borrar resultados y reiniciar
+            </button>
+          </div>
+
+          <div id="external-metrics-cnn-results" style="display:none; margin-top: 20px; padding: 15px; background: #f3e5f5; border: 2px solid #9c27b0; border-radius: 6px;">
+            <h4>📊 Resultados de Métricas Externas:</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 10px 0;">
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>ARI</strong><br><span id="result-cnn-ari" style="font-size: 20px; color: #d32f2f;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>AMI</strong><br><span id="result-cnn-ami" style="font-size: 20px; color: #1976d2;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>NMI</strong><br><span id="result-cnn-nmi" style="font-size: 20px; color: #388e3c;">-</span>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>Dunn Index</strong><br><span id="result-cnn-dunn" style="font-size: 18px; color: #f57c00;">-</span>
+              </div>
+              <div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+                <strong>Silhouette</strong><br><span id="result-cnn-silhouette" style="font-size: 18px; color: #0097a7;">-</span>
+              </div>
+            </div>
+            <div id="metrics-cnn-summary" style="margin-top: 10px; font-size: 12px; color: #555;"></div>
+            <hr style="margin: 20px 0; border: none; border-top: 2px solid #9c27b0;">
+            <h4 style="margin-top: 20px;">🎯 Clusters Predichos (con Imágenes):</h4>
+            <div id="clusters-cnn-visualization" style="margin-top: 15px;"></div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="upload-btn">Subir</button>
+          <button id="clear-btn" class="secondary">Borrar todo</button>
+          <button class="secondary" onclick="location.href='/docs'">📚 Listo</button>
+          <span id="status" class="status"></span>
+        </div>
+      </section>
+
+      <!-- Galería -->
+      <section id="gallery-section">
+        <h2>Galería de Imágenes</h2>
+        <div id="gallery" class="gallery"></div>
+      </section>
+
+      <!-- Resultados -->
+      <section id="results-section" style="display: none;">
+        <h2>Resultados</h2>
+        <div id="results" class="results"></div>
+      </section>
+    </div>
+
+    <!-- App modular con ES Modules -->
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
