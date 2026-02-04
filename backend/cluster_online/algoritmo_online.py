@@ -17,7 +17,7 @@ from sklearn.datasets import load_iris
 from sklearn.preprocessing import StandardScaler, normalize
 
 
-# Cosine similarity
+# Similitud del coseno
 
 def cos_sim(a: np.ndarray, b: np.ndarray) -> float:
     return 1.0 - cosine(a, b)
