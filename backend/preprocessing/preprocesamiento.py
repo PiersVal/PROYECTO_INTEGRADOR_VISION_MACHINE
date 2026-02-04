@@ -1,3 +1,7 @@
+# ====================================================
+#        PREPROCESAMIENTO DE IMÁGENES   
+# ====================================================
+
 import os
 import cv2
 import numpy as np
@@ -250,3 +254,4 @@ def procesar_imagenes(carpeta_entrada, carpeta_salida_gris, carpeta_salida_contr
         total_convertidas += 1
 
     return total_convertidas
+## End of backend/preprocessing/preprocesamiento.py
