@@ -33,3 +33,74 @@ El proyecto consiste en:
 - Aplica Máquinas de Soporte Vectorial (SVM) para clasificación y regresión.
 - Desarrolla algoritmos basados en árboles de decisión.
 ###
+
+## Instrucciones de ejecución
+
+### Opción recomendada: Docker Compose
+**Requisitos:** Docker Desktop instalado.
+
+1. En la raíz del proyecto, ejecutar:
+   ```bash
+   docker compose up --build
+   ```
+   Para ejecutar en segundo plano:
+   ```bash
+   docker compose up -d --build
+   ```
+2. Abrir la interfaz en el navegador:
+   - Frontend: http://localhost:8080
+   - Backend (API): http://localhost:8000
+
+Para detener:
+```bash
+docker compose down
+```
+
+Ver logs en tiempo real:
+```bash
+docker compose logs -f
+```
+
+---
+
+### Opción local (sin Docker)
+**Requisitos:** Python 3.11+, pip.
+
+#### 1) Backend (FastAPI)
+1. Crear y activar un entorno virtual:
+   ```bash
+   python -m venv .venv
+   .venv\Scripts\activate
+   ```
+2. Instalar dependencias:
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
+3. Ejecutar el servidor:
+   ```bash
+   cd backend
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+#### 2) Frontend (HTML/JS)
+El frontend espera que el backend esté disponible vía `/api`. Para modo local sin Docker, tienes dos alternativas:
+
+**A. Usar un servidor con proxy `/api` (recomendado).**
+Puedes levantar Nginx con una configuración similar a `frontend/nginx.conf`, o usar Docker solo para el frontend.
+
+**B. Cambiar temporalmente el endpoint local.**
+Editar `frontend/js/utils.js` y reemplazar:
+```js
+export const API_BASE = isLocal ? "/api" : "https://remontada-uzn6.onrender.com";
+```
+por:
+```js
+export const API_BASE = isLocal ? "http://localhost:8000" : "https://remontada-uzn6.onrender.com";
+```
+
+Luego, servir los archivos estáticos:
+```bash
+cd frontend
+python -m http.server 8080
+```
+Abrir: http://localhost:8080
